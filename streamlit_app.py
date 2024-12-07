@@ -30,15 +30,7 @@ if url:
 product_categories = df1['Product'].unique().tolist()
 
 
-# Explicitly initialize other session state variables
-if "problem_described" not in st.session_state:
-    st.session_state.problem_described = False
 
-if "product_described" not in st.session_state:
-    st.session_state.product_described = None
-
-if "jira_task_created" not in st.session_state:
-    st.session_state.jira_task_created = False
 
 
 ### Initialization
@@ -53,6 +45,18 @@ if "memory" not in st.session_state:
     #st.session_state.problem_described = False
     #st.session_state.product_described = None
     #st.session_state.jira_task_created = False
+
+    # Explicitly initialize other session state variables
+    if "problem_described" not in st.session_state:
+        st.session_state.problem_described = False
+
+    if "product_described" not in st.session_state:
+        st.session_state.product_described = None
+
+    if "jira_task_created" not in st.session_state:
+        st.session_state.jira_task_created = False
+
+    
     
     # LLM and tools setup
     chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model=model_type)
