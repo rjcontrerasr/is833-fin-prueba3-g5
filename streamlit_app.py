@@ -14,38 +14,40 @@ from langchain import hub
 # Show title and description
 st.title("💬 Financial Support Chatbot")
 
-# Load the dataset for product categories
-url = "https://raw.githubusercontent.com/JeanJMH/Financial_Classification/main/Classification_data.csv"
-st.write(f"Dataset URL: {url}")
+### Adding subproducts
 
-# Load the dataset
+# Add a text input field for the GitHub raw URL
+url = "https://raw.githubusercontent.com/JeanJMH/Financial_Classification/main/Classification_data.csv"
+st.write(url)
+
+# Load the dataset if a valid URL is provided
 if url:
     try:
         df1 = pd.read_csv(url)
-        product_categories = df1['Product'].unique().tolist()
-        st.write(f"Product categories loaded: {product_categories}")  # Debugging step
     except Exception as e:
-        st.error(f"Error loading dataset: {e}")
-        product_categories = []
-else:
-    product_categories = []
-    st.warning("No URL provided for dataset.")
+        st.error(f"An error occurred: {e}")
 
-# Initialize session state variables
+product_categories = df1['Product'].unique().tolist()
+
+### Initialization
 if "memory" not in st.session_state:
     model_type = "gpt-4o-mini"
     
-    # Initialize memory and session variables
-    st.session_state.memory = ConversationBufferWindowMemory(
-        memory_key="chat_history", 
-        k=10, 
-        return_messages=True
-    )
-    st.session_state.problem_described = False
-    st.session_state.product_described = None
-    st.session_state.jira_task_created = False
+    # Initialize memory
+    max_number_of_exchanges = 10
+    st.session_state.memory = ConversationBufferWindowMemory(memory_key="chat_history", k=max_number_of_exchanges, return_messages=True)
+    
+    # Explicitly initialize other session state variables
+    if "problem_described" not in st.session_state:
+        st.session_state.problem_described = False
 
-    # Initialize the agent
+    if "product_described" not in st.session_state:
+        st.session_state.product_described = None
+
+    if "jira_task_created" not in st.session_state:
+        st.session_state.jira_task_created = False
+
+    # LLM and tools setup
     chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model=model_type)
 
     from langchain.agents import tool
@@ -57,12 +59,17 @@ if "memory" not in st.session_state:
         return "Today is " + str(date.today())
 
     tools = [datetoday]
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", f"You are a financial support assistant. Begin by greeting the user warmly and asking them to describe their issue. Once the issue is described, classify the complaint strictly based on these possible categories: {product_categories}. Kindly inform the user that a ticket has been created, provide the category assigned to their complaint, and reassure them that the issue will be forwarded to the appropriate support team. Maintain a professional and empathetic tone throughout."),
-        ("placeholder", "{chat_history}"),
-        ("human", "{input}"),
-        ("placeholder", "{agent_scratchpad}"),
-    ])
+
+    from langchain_core.prompts import ChatPromptTemplate
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", f"You are a financial support assistant. Begin by greeting the user warmly and asking them to describe their issue. Wait for the user to describe their problem. Once the issue is described, classify the complaint strictly based on these possible categories: {product_categories}. Kindly inform the user that a ticket has been created, provide the category assigned to their complaint, and reassure them that the issue will be forwarded to the appropriate support team, who will reach out to them shortly. Maintain a professional and empathetic tone throughout."),
+            ("placeholder", "{chat_history}"),
+            ("human", "{input}"),
+            ("placeholder", "{agent_scratchpad}"),
+        ]
+    )
     agent = create_tool_calling_agent(chat, tools, prompt)
     st.session_state.agent_executor = AgentExecutor(agent=agent, tools=tools, memory=st.session_state.memory, verbose=True)
 
@@ -74,7 +81,7 @@ def extract_product_from_input(user_input, product_list):
     st.write("Entered product extraction function.")
     st.write(f"User input: {user_input}")  # Debugging step
     for product in product_list:
-        if product.lower() in user_input.lower():  # Case-insensitive matching
+        if product.lower() in user_input.lower():
             st.write(f"Detected product: {product}")  # Debugging step
             return product
     st.write("No matching product found.")  # Debugging step
