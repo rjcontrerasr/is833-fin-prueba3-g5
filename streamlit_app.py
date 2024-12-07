@@ -121,11 +121,6 @@ if prompt := st.chat_input("How can I help?"):
         # Display acknowledgment message
         st.chat_message("assistant").write(unified_response)
 
-        # Display the product and subproduct in the sidebar
-        st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
-        if identified_subproduct:
-            st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
-
         # For troubleshooting purposes, print the identified product and subproduct
         st.write("Troubleshooting: Identified Product and Subproduct")
         st.write(f"Product: {identified_product}")
@@ -134,8 +129,9 @@ if prompt := st.chat_input("How can I help?"):
     else:
         st.chat_message("assistant").write(response)  # Default response when no category is identified
 
-# Display the stored product and subproduct categories, if any
+# Consolidate sidebar display here (only once)
 if st.session_state.identified_product:
     st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
 if "identified_subproduct" in st.session_state:
     st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
+
