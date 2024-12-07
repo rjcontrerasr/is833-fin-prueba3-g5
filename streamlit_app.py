@@ -78,8 +78,9 @@ for message in st.session_state.memory.buffer:
 #################
 
 
-# Initialize subproduct_source globally
+# Initialize subproduct_source and issue_source globally
 subproduct_source = "No source identified"
+issue_source = "No source identified"
 
 # Create a chat input field to allow the user to enter a message
 if prompt := st.chat_input("How can I help?"):
@@ -130,26 +131,59 @@ if prompt := st.chat_input("How can I help?"):
                 st.session_state.identified_subproduct = identified_subproduct
                 subproduct_source = "Fallback (most general category)"
 
+        # Filter the dataset to find "Issues" for the identified product and subproduct
+        issues = df1[(df1['Product'] == identified_product) & (df1['Sub-product'] == identified_subproduct)]['Issue'].unique().tolist()
+
+        # Use the model to identify the most relevant "Issue"
+        identified_issue = None
+        if issues:
+            # Create a prompt to evaluate the closest issue
+            issue_prompt = (
+                f"The user described the following issue: '{prompt}'. Based on the description, "
+                f"please identify the most relevant issue from the following list: {issues}. "
+                "If none of the issues match exactly, respond with the most general category."
+            )
+
+            # Invoke the model to determine the issue
+            issue_response = st.session_state.agent_executor.invoke({"input": issue_prompt})['output']
+
+            # Check if the model identified a valid issue
+            for issue in issues:
+                if issue.lower() in issue_response.lower():
+                    identified_issue = issue
+                    st.session_state.identified_issue = identified_issue
+                    issue_source = "LLM"
+                    break
+
+            # Fallback: Select the first issue if none is confidently identified
+            if not identified_issue:
+                identified_issue = issues[0]
+                st.session_state.identified_issue = identified_issue
+                issue_source = "Fallback (most general category)"
+
         # Create acknowledgment message
         unified_response = (
             f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**, "
-            f"specifically the subcategory: **{identified_subproduct}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
+            f"specifically the subcategory: **{identified_subproduct}**, with the issue categorized as: **{identified_issue}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
             "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
         )
 
         # Display acknowledgment message
         st.chat_message("assistant").write(unified_response)
 
-        # Add a message to confirm the subproduct identification source
-        if subproduct_source == "LLM":
-            st.write("The subproduct was directly identified by the model.")
+        # Add a message to confirm the issue identification source
+        if issue_source == "LLM":
+            st.write("The issue was directly identified by the model.")
         else:
-            st.write("The subproduct was not directly identified by the model. The most general subcategory was selected.")
+            st.write("The issue was not directly identified by the model. The most general category was selected.")
 
-        # For troubleshooting purposes, print the identified product and subproduct
-        st.write("Troubleshooting: Identified Product and Subproduct")
+        # For troubleshooting purposes, print the identified product, subproduct, and issue
+        st.write("Troubleshooting: Identified Product, Subproduct, and Issue")
         st.write(f"Product: {identified_product}")
         st.write(f"Subproduct: {identified_subproduct if identified_subproduct else 'No subproduct identified'}")
+        st.write(f"Issue: {identified_issue if identified_issue else 'No issue identified'}")
+        st.write("Troubleshooting: List of issues for the identified product and subproduct:")
+        st.write(issues)
 
     else:
         st.chat_message("assistant").write(response)  # Default response when no category is identified
@@ -160,9 +194,6 @@ if st.session_state.identified_product:
 if "identified_subproduct" in st.session_state:
     st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
     st.sidebar.write(f"Subproduct Identification Source: {subproduct_source}")
-
-# Display the subproducts for troubleshooting
-if st.session_state.identified_product:
-    subproducts = df1[df1['Product'] == st.session_state.identified_product]['Sub-product'].unique().tolist()
-    st.write("Troubleshooting: List of subproducts for the identified product:")
-    st.write(subproducts)
+if "identified_issue" in st.session_state:
+    st.sidebar.write(f"Stored Issue: {st.session_state.identified_issue}")
+    st.sidebar.write(f"Issue Identification Source: {issue_source}")
