@@ -126,6 +126,13 @@ if prompt := st.chat_input("How can I help?"):
     
     st.chat_message("assistant").write(response)
 
+
+st.write("aca voy")
+st.write(problem_described)
+st.write(product_described)
+st.write(jira_task_created)
+
+
 # Conditional Jira task creation
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
     st.write("Starting Jira task creation process...")  # Debugging step
