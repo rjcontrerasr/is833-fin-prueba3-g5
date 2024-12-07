@@ -128,18 +128,27 @@ if prompt := st.chat_input("How can I help?"):
 
 # Conditional Jira task creation
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
+    st.write("Starting Jira task creation process...")  # Debugging step
     try:
         # Setup Jira API credentials
+        st.write("Setting up Jira API environment variables...")  # Debugging step
         os.environ["JIRA_API_TOKEN"] = st.secrets["JIRA_API_TOKEN"]
         os.environ["JIRA_USERNAME"] = "rich@bu.edu"
         os.environ["JIRA_INSTANCE_URL"] = "https://is883-genai-r.atlassian.net/"
         os.environ["JIRA_CLOUD"] = "True"
 
         # Use a dedicated variable for the problem description
-        user_description = st.session_state.memory.buffer[-1].content  # Extract latest user message
+        st.write("Extracting user description from memory buffer...")  # Debugging step
+        if st.session_state.memory.buffer:
+            user_description = st.session_state.memory.buffer[-1].content  # Extract latest user message
+            st.write(f"User description extracted: {user_description}")  # Debugging step
+        else:
+            st.error("Memory buffer is empty. Cannot extract user description.")
+            raise ValueError("Memory buffer is empty.")
 
         # Define Jira task details
         assigned_issue = f"Managing my {st.session_state.product_described} Account"
+        st.write(f"Assigned issue: {assigned_issue}")  # Debugging step
         question = (
             f"Create a task in my project with the key FST. Take into account that the Key of this project is FST. "
             f"The task's type is 'Task', assigned to rich@bu.edu. "
@@ -148,30 +157,40 @@ if st.session_state.problem_described and st.session_state.product_described and
             f"Use 'High' priority for other issues. "
             f"The description is '{user_description}'."
         )
+        st.write("Question to agent prepared.")  # Debugging step
+        st.write(f"Question content: {question}")  # Debugging step
 
         # Initialize Jira toolkit and agent
+        st.write("Initializing Jira toolkit and agent...")  # Debugging step
         jira = JiraAPIWrapper()
         toolkit = JiraToolkit.from_jira_api_wrapper(jira)
 
         # Fix tool names and descriptions
+        st.write("Fixing tool names and descriptions...")  # Debugging step
         for idx, tool in enumerate(toolkit.tools):
             toolkit.tools[idx].name = toolkit.tools[idx].name.replace(" ", "_")
             if "create_issue" in toolkit.tools[idx].name:
                 toolkit.tools[idx].description += " Ensure to specify the project ID."
 
         tools = toolkit.get_tools()
+        st.write(f"Tools initialized: {tools}")  # Debugging step
         chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model="gpt-4o-mini")
         prompt = hub.pull("hwchase17/react")
         agent = create_react_agent(chat, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
         # Invoke agent to create Jira task
+        st.write("Invoking agent to create Jira task...")  # Debugging step
         result = agent_executor.invoke({"input": question})
+        st.write(f"Agent execution result: {result}")  # Debugging step
         st.success(f"Jira task created successfully for the product: {st.session_state.product_described}")
 
         # Mark task as created
         st.session_state.jira_task_created = True
+        st.write("Task creation process completed successfully.")  # Debugging step
 
     except Exception as e:
         st.error(f"Error during Jira task creation: {e}")
+        st.write(f"Exception traceback: {e}")  # Debugging step
         st.session_state.jira_task_created = False  # Reset flag if task creation failed
+
