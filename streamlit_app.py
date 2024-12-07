@@ -75,7 +75,9 @@ for message in st.session_state.memory.buffer:
     st.chat_message(message.type).write(message.content)
 
 
-##########
+#################
+
+
 # Initialize subproduct_source globally
 subproduct_source = "No source identified"
 
@@ -164,4 +166,3 @@ if st.session_state.identified_product:
     subproducts = df1[df1['Product'] == st.session_state.identified_product]['Sub-product'].unique().tolist()
     st.write("Troubleshooting: List of subproducts for the identified product:")
     st.write(subproducts)
-
