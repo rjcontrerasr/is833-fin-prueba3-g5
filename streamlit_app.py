@@ -147,7 +147,7 @@ if st.session_state.problem_described and st.session_state.product_described and
             raise ValueError("Memory buffer is empty.")
 
         # Define Jira task details
-        assigned_issue = f"Managing my {st.session_state.product_described} Account"
+        assigned_issue = f"The new problem is {st.session_state.product_described} Account"
         st.write(f"Assigned issue: {assigned_issue}")  # Debugging step
         question = (
             f"Create a task in my project with the key FST. Take into account that the Key of this project is FST. "
