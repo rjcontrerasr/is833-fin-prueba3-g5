@@ -77,6 +77,8 @@ for message in st.session_state.memory.buffer:
 
 ##########
 
+# Initialize subproduct_source globally
+subproduct_source = "No source identified"
 
 # Create a chat input field to allow the user to enter a message
 if prompt := st.chat_input("How can I help?"):
@@ -102,7 +104,6 @@ if prompt := st.chat_input("How can I help?"):
 
         # Use the model to identify the best matching subproduct
         identified_subproduct = None
-        subproduct_source = None  # Track the source of the subproduct (LLM or fallback)
         if subproducts:
             # Create a prompt to evaluate the closest subproduct
             subproduct_prompt = (
@@ -157,7 +158,5 @@ if st.session_state.identified_product:
     st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
 if "identified_subproduct" in st.session_state:
     st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
-    if subproduct_source:
-        st.sidebar.write(f"Subproduct Identification Source: {subproduct_source}")
-
+    st.sidebar.write(f"Subproduct Identification Source: {subproduct_source}")
 
