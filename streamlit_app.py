@@ -64,9 +64,11 @@ if "memory" not in st.session_state:
     agent = create_tool_calling_agent(chat, tools, prompt)
     st.session_state.agent_executor = AgentExecutor(agent=agent, tools=tools, memory=st.session_state.memory, verbose=True)
 
-# Define a key in session state to store the identified product
+# Define a key in session state to store the identified product and subproduct
 if "identified_product" not in st.session_state:
     st.session_state.identified_product = None
+if "identified_subproduct" not in st.session_state:
+    st.session_state.identified_subproduct = None
 
 # Display the existing chat messages via `st.chat_message`
 for message in st.session_state.memory.buffer:
@@ -91,22 +93,49 @@ if prompt := st.chat_input("How can I help?"):
 
     # Create a single unified response message
     if identified_product:
-        unified_response = (
-            f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**. "
-            "A ticket has been created for your issue, and it will be forwarded to the appropriate support team. They will reach out to you shortly to assist you further. "
-            "If you have any more questions or need additional assistance, please let me know!"
-        )
-        st.chat_message("assistant").write(unified_response)
-
         # Filter the dataset to find subcategories for the identified product
         subproducts = df1[df1['Product'] == identified_product]['Sub-product'].unique().tolist()
 
-        # Display the subproducts list
-        st.write(f"Subcategories for the product category **{identified_product}**:")
-        st.write(subproducts)
+        # Identify the subproduct from the response
+        identified_subproduct = None
+        for subproduct in subproducts:
+            if subproduct.lower() in response.lower():
+                identified_subproduct = subproduct
+                st.session_state.identified_subproduct = subproduct
+                break
+
+        # Create acknowledgment message
+        if identified_subproduct:
+            unified_response = (
+                f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**, "
+                f"specifically the subcategory: **{identified_subproduct}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
+                "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
+            )
+        else:
+            unified_response = (
+                f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**. "
+                "A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
+                "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
+            )
+
+        # Display acknowledgment message
+        st.chat_message("assistant").write(unified_response)
+
+        # Display the product and subproduct in the sidebar
+        st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
+        if identified_subproduct:
+            st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
+
+        # For troubleshooting purposes, print the identified product and subproduct
+        st.write("Troubleshooting: Identified Product and Subproduct")
+        st.write(f"Product: {identified_product}")
+        st.write(f"Subproduct: {identified_subproduct if identified_subproduct else 'No subproduct identified'}")
+
     else:
         st.chat_message("assistant").write(response)  # Default response when no category is identified
 
-# Display the stored product category, if any
+# Display the stored product and subproduct categories, if any
 if st.session_state.identified_product:
     st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
+if "identified_subproduct" in st.session_state:
+    st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
