@@ -111,10 +111,13 @@ def update_problem_flag(user_input):
 
 # Display existing chat messages
 
+
 # Display existing chat messages
 st.write("Current memory buffer state:")  # Debugging step
 for message in st.session_state.memory.buffer:
-    st.chat_message(message["type"]).write(message["content"])
+    message_type = "human" if message.type == "human" else "assistant"
+    st.chat_message(message_type).write(message.content)
+
 
 # Chat input and problem/product handling
 if prompt := st.chat_input("How can I help?"):
