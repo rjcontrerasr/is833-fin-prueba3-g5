@@ -76,7 +76,6 @@ for message in st.session_state.memory.buffer:
 
 
 ##########
-
 # Initialize subproduct_source globally
 subproduct_source = "No source identified"
 
@@ -159,4 +158,10 @@ if st.session_state.identified_product:
 if "identified_subproduct" in st.session_state:
     st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
     st.sidebar.write(f"Subproduct Identification Source: {subproduct_source}")
+
+# Display the subproducts for troubleshooting
+if st.session_state.identified_product:
+    subproducts = df1[df1['Product'] == st.session_state.identified_product]['Sub-product'].unique().tolist()
+    st.write("Troubleshooting: List of subproducts for the identified product:")
+    st.write(subproducts)
 
