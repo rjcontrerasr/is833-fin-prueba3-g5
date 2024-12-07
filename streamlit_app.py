@@ -249,7 +249,7 @@ if (
             f"The summary is '{assigned_issue}'. "
             f"Always assign 'Highest' priority if the issue is related to fraudulent activities. "
             f"Use 'High' priority for other issues. "
-            f"The description is '{user_description}' and put today's date by the end which provides additional details."
+            f"The description is '{user_description}' which provides additional details."
         )
         st.write("Prepared Jira task details.")  # Debugging step
 
