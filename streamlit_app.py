@@ -11,7 +11,6 @@ from langchain_community.utilities.jira import JiraAPIWrapper
 from langchain_community.agent_toolkits.jira.toolkit import JiraToolkit
 from langchain import hub
 
-
 # Show title and description
 st.title("💬 Financial Support Chatbot")
 ### Adding subproducts
@@ -97,6 +96,13 @@ if prompt := st.chat_input("How can I help?"):
             "If you have any more questions or need additional assistance, please let me know!"
         )
         st.chat_message("assistant").write(unified_response)
+
+        # Filter the dataset to find subcategories for the identified product
+        subproducts = df1[df1['Product'] == identified_product]['Subproduct'].unique().tolist()
+
+        # Display the subproducts list
+        st.write(f"Subcategories for the product category **{identified_product}**:")
+        st.write(subproducts)
     else:
         st.chat_message("assistant").write(response)  # Default response when no category is identified
 
