@@ -21,6 +21,7 @@ st.write(url)
 if url:
     try:
         df1 = pd.read_csv(url)
+        st.write(df1)
     except Exception as e:
         st.error(f"An error occurred: {e}")
 
