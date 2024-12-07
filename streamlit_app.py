@@ -99,7 +99,7 @@ if prompt := st.chat_input("How can I help?"):
         st.chat_message("assistant").write(unified_response)
 
         # Filter the dataset to find subcategories for the identified product
-        subproducts = df1[df1['Product'] == identified_product]['Subproduct'].unique().tolist()
+        subproducts = df1[df1['Product'] == identified_product]['Sub-product'].unique().tolist()
 
         # Display the subproducts list
         st.write(f"Subcategories for the product category **{identified_product}**:")
