@@ -107,11 +107,6 @@ if prompt := st.chat_input("How can I help?"):
 # Conditional Jira task creation
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
     st.session_state.jira_task_created = True  # Prevent duplicate task creation
-
-    @tool
-    def datetoday(dummy: str) -> str:
-    """Returns today's date."""
-    return "Today is " + str(date.today())
     
     # Setup Jira API
     os.environ["JIRA_API_TOKEN"] = st.secrets["JIRA_API_TOKEN"]
