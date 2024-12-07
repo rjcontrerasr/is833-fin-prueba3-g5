@@ -204,12 +204,15 @@ if "identified_issue" in st.session_state:
 ############Addign Jira
 
 
-
 # Initialize Jira-related session states
 if "jira_task_created" not in st.session_state:
     st.session_state.jira_task_created = False
 if "jira_task_description" not in st.session_state:
     st.session_state.jira_task_description = None
+if "jira_task_number" not in st.session_state:
+    st.session_state.jira_task_number = None
+if "jira_task_priority" not in st.session_state:
+    st.session_state.jira_task_priority = None
 
 # Jira task creation logic
 if (
@@ -239,6 +242,15 @@ if (
         subproduct = st.session_state.identified_subproduct
         issue = st.session_state.identified_issue
 
+        # Determine priority
+        if "fraud" in issue.lower():
+            task_priority = "Highest"
+        else:
+            task_priority = "High"
+
+        # Store priority in session state
+        st.session_state.jira_task_priority = task_priority
+
         # Create the assigned issue summary
         assigned_issue = f"Issue with {product} - {subproduct}: {issue}"
         st.write(f"Assigned issue: {assigned_issue}")  # Debugging step
@@ -247,8 +259,7 @@ if (
         question = (
             f"Create a task in my project with the key FST. The task's type is 'Task', assigned to rich@bu.edu. "
             f"The summary is '{assigned_issue}'. "
-            f"Always assign 'Highest' priority if the issue is related to fraudulent activities. "
-            f"Use 'High' priority for other issues. "
+            f"Assign the priority '{task_priority}'. "
             f"The description is '{user_description}' which provides additional details."
         )
         st.write("Prepared Jira task details.")  # Debugging step
@@ -272,9 +283,20 @@ if (
         # Invoke agent to create Jira task
         result = agent_executor.invoke({"input": question})
         st.write(f"Agent execution result: {result}")  # Debugging step
-        st.success(f"Jira task created successfully for the issue: {assigned_issue}")
 
-        # Store Jira task details in session state
+        # Extract Jira task number from the result (assuming it's returned in the response)
+        if "key" in result:
+            task_number = result["key"]
+            st.session_state.jira_task_number = task_number
+        else:
+            task_number = "Unknown"
+
+        st.success(
+            f"Jira task '{task_number}' created successfully for the issue: {assigned_issue} "
+            f"with priority '{task_priority}'."
+        )
+
+        # Store Jira task description in session state
         st.session_state.jira_task_created = True
         st.session_state.jira_task_description = assigned_issue
         st.write("Task creation process completed successfully.")  # Debugging step
@@ -283,4 +305,8 @@ if (
         st.error(f"Error during Jira task creation: {e}")
         st.session_state.jira_task_created = False
 
+# Update sidebar with Jira task information
+if st.session_state.jira_task_created:
+    st.sidebar.write(f"Jira Task Number: {st.session_state.jira_task_number}")
+    st.sidebar.write(f"Task Priority: {st.session_state.jira_task_priority}")
 
