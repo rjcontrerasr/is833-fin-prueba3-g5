@@ -204,15 +204,6 @@ if "identified_issue" in st.session_state:
 ############Addign Jira
 
 
-# Initialize Jira-related session states
-if "jira_task_created" not in st.session_state:
-    st.session_state.jira_task_created = False
-if "jira_task_description" not in st.session_state:
-    st.session_state.jira_task_description = None
-if "jira_task_number" not in st.session_state:
-    st.session_state.jira_task_number = None
-if "jira_task_priority" not in st.session_state:
-    st.session_state.jira_task_priority = None
 
 # Jira task creation logic
 if (
@@ -257,22 +248,23 @@ if (
 
         # Define task creation question for the model
         question = (
-            f"Create a task in my project with the key FST. The task's type is 'Task', assigned to rich@bu.edu. "
-            f"The summary is '{assigned_issue}'. "
-            f"Assign the priority '{task_priority}'. "
-            f"The description is '{user_description}' which provides additional details."
+            f"Create a task in the Jira project with the key 'FST'. The task type is 'Task'. "
+            f"Assign the task to 'rich@bu.edu'. "
+            f"The task's summary is '{assigned_issue}'. "
+            f"The task's priority is '{task_priority}'. "
+            f"The description is: '{user_description}'."
         )
-        st.write("Prepared Jira task details.")  # Debugging step
+        st.write(f"Generated question for Jira task creation: {question}")  # Debugging step
 
         # Initialize Jira toolkit and agent
         jira = JiraAPIWrapper()
         toolkit = JiraToolkit.from_jira_api_wrapper(jira)
 
-        # Fix tool names and descriptions
+        # Ensure tool names and descriptions are properly set
         for idx, tool in enumerate(toolkit.tools):
             toolkit.tools[idx].name = toolkit.tools[idx].name.replace(" ", "_")
             if "create_issue" in toolkit.tools[idx].name:
-                toolkit.tools[idx].description += " Ensure to specify the project ID."
+                toolkit.tools[idx].description += " Ensure to specify the project key (e.g., 'FST')."
 
         tools = toolkit.get_tools()
         chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model="gpt-4o-mini")
@@ -285,7 +277,7 @@ if (
         st.write(f"Agent execution result: {result}")  # Debugging step
 
         # Extract Jira task number from the result (assuming it's returned in the response)
-        if "key" in result:
+        if isinstance(result, dict) and "key" in result:
             task_number = result["key"]
             st.session_state.jira_task_number = task_number
         else:
@@ -303,10 +295,13 @@ if (
 
     except Exception as e:
         st.error(f"Error during Jira task creation: {e}")
+        st.write("Task creation failed. Exception details below:")
+        st.write(e)  # Debugging step
         st.session_state.jira_task_created = False
 
 # Update sidebar with Jira task information
 if st.session_state.jira_task_created:
     st.sidebar.write(f"Jira Task Number: {st.session_state.jira_task_number}")
     st.sidebar.write(f"Task Priority: {st.session_state.jira_task_priority}")
+
 
