@@ -44,13 +44,19 @@ if "memory" not in st.session_state:
     
     # LLM and tools setup
     chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model=model_type)
-    
+
+
+    from langchain.agents import tool
+    from datetime import date
     @tool
     def datetoday(dummy: str) -> str:
         """Returns today's date."""
         return "Today is " + str(date.today())
 
     tools = [datetoday]
+
+    from langchain_core.prompts import ChatPromptTemplate
+        
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", f"You are a financial support assistant. Begin by greeting the user warmly and asking them to describe their issue. Wait for the user to describe their problem. Once the issue is described, classify the complaint strictly based on these possible categories: {product_categories}. Kindly inform the user that a ticket has been created, provide the category assigned to their complaint, and reassure them that the issue will be forwarded to the appropriate support team, who will reach out to them shortly. Maintain a professional and empathetic tone throughout."),
