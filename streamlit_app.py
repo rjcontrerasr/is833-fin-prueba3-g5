@@ -110,17 +110,24 @@ def update_problem_flag(user_input):
         return "Could you please provide more details about your issue?"
 
 # Display existing chat messages
+
+# Display existing chat messages
+st.write("Current memory buffer state:")  # Debugging step
 for message in st.session_state.memory.buffer:
-    st.chat_message(message.type).write(message.content)
+    st.chat_message(message["type"]).write(message["content"])
 
 # Chat input and problem/product handling
 if prompt := st.chat_input("How can I help?"):
+    # Append user input to memory buffer manually
+    st.write("User input received.")  # Debugging step
+    st.session_state.memory.buffer.append({"type": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
     # Debugging the current state
     st.write("Before handling user input:")
     st.write(f"problem_described: {st.session_state.problem_described}")
     st.write(f"product_described: {st.session_state.product_described}")
+    st.write(f"Current memory buffer state: {st.session_state.memory.buffer}")  # Debugging step
     
     if not st.session_state.problem_described:
         response = update_problem_flag(prompt)  # Update the problem flag and check for product
@@ -128,7 +135,17 @@ if prompt := st.chat_input("How can I help?"):
         # Generate a response from the agent if the problem is already described
         response = st.session_state.agent_executor.invoke({"input": prompt})['output']
     
+    # Append assistant response to memory buffer manually
+    st.session_state.memory.buffer.append({"type": "assistant", "content": response})
     st.chat_message("assistant").write(response)
+
+    # Debugging memory buffer state after interaction
+    st.write("After handling user input:")
+    st.write(f"problem_described: {st.session_state.problem_described}")
+    st.write(f"product_described: {st.session_state.product_described}")
+    st.write(f"Updated memory buffer state: {st.session_state.memory.buffer}")  # Debugging step
+
+
 
 # Jira task creation logic
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
