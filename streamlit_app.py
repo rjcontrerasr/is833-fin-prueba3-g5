@@ -74,6 +74,10 @@ if "identified_subproduct" not in st.session_state:
 for message in st.session_state.memory.buffer:
     st.chat_message(message.type).write(message.content)
 
+
+##########
+
+
 # Create a chat input field to allow the user to enter a message
 if prompt := st.chat_input("How can I help?"):
     
@@ -98,6 +102,7 @@ if prompt := st.chat_input("How can I help?"):
 
         # Use the model to identify the best matching subproduct
         identified_subproduct = None
+        subproduct_source = None  # Track the source of the subproduct (LLM or fallback)
         if subproducts:
             # Create a prompt to evaluate the closest subproduct
             subproduct_prompt = (
@@ -114,39 +119,30 @@ if prompt := st.chat_input("How can I help?"):
                 if subproduct.lower() in subproduct_response.lower():
                     identified_subproduct = subproduct
                     st.session_state.identified_subproduct = identified_subproduct
+                    subproduct_source = "LLM"
                     break
 
             # Fallback: Select the first subproduct if none is confidently identified
             if not identified_subproduct:
                 identified_subproduct = subproducts[0]
                 st.session_state.identified_subproduct = identified_subproduct
+                subproduct_source = "Fallback (most general category)"
 
         # Create acknowledgment message
-        if identified_subproduct:
-            unified_response = (
-                f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**, "
-                f"specifically the subcategory: **{identified_subproduct}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
-                "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
-            )
-
-            # Confirm whether the subproduct was directly identified by the model or selected as fallback
-            if identified_subproduct == subproducts[0]:
-                st.write("The subproduct was not directly identified by the model. The most general subcategory was selected.")
-            else:
-                st.write("The subproduct was directly identified by the model.")
-        else:
-            unified_response = (
-                f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**. "
-                "A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
-                "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
-            )
+        unified_response = (
+            f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**, "
+            f"specifically the subcategory: **{identified_subproduct}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
+            "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
+        )
 
         # Display acknowledgment message
         st.chat_message("assistant").write(unified_response)
 
-        # Display the product and subproduct in the sidebar
-        st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
-        st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
+        # Add a message to confirm the subproduct identification source
+        if subproduct_source == "LLM":
+            st.write("The subproduct was directly identified by the model.")
+        else:
+            st.write("The subproduct was not directly identified by the model. The most general subcategory was selected.")
 
         # For troubleshooting purposes, print the identified product and subproduct
         st.write("Troubleshooting: Identified Product and Subproduct")
@@ -161,4 +157,7 @@ if st.session_state.identified_product:
     st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
 if "identified_subproduct" in st.session_state:
     st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
+    if subproduct_source:
+        st.sidebar.write(f"Subproduct Identification Source: {subproduct_source}")
+
 
