@@ -100,6 +100,12 @@ if prompt := st.chat_input("How can I help?"):
     # Provide feedback to the user about the identified product
     if st.session_state.identified_product:
         st.write(f"Identified product category: {st.session_state.identified_product}")
+        
+        # Confirmation message to the customer
+        st.chat_message("assistant").write(
+            f"Thank you for your patience. A ticket has been created for the product category **{st.session_state.identified_product}**. "
+            "Our support team will review your issue and reach out to you shortly. Rest assured, we are here to assist you."
+        )
     else:
         st.write("No product category identified yet.")
 
