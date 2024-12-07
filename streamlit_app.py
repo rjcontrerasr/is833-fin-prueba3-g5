@@ -30,9 +30,6 @@ if url:
 product_categories = df1['Product'].unique().tolist()
 
 
-
-
-
 ### Initialization
 if "memory" not in st.session_state:
     model_type = "gpt-4o-mini"
@@ -56,10 +53,7 @@ if "memory" not in st.session_state:
     if "jira_task_created" not in st.session_state:
         st.session_state.jira_task_created = False
 
-    st.write("Session state variables initialized:")
-    st.write(f"problem_described: {st.session_state.problem_described}")
-    st.write(f"product_described: {st.session_state.product_described}")
-    st.write(f"jira_task_created: {st.session_state.jira_task_created}")
+
     
     # LLM and tools setup
     chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model=model_type)
@@ -129,12 +123,14 @@ if prompt := st.chat_input("How can I help?"):
     
     st.chat_message("assistant").write(response)
 
-
-st.write("aca voy")
 #st.write(problem_described)
 #st.write(product_described)
 #st.write(jira_task_created)
 
+    st.write("Session state variables initialized:")
+    st.write(f"problem_described: {st.session_state.problem_described}")
+    st.write(f"product_described: {st.session_state.product_described}")
+    st.write(f"jira_task_created: {st.session_state.jira_task_created}")
 
 # Conditional Jira task creation
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
