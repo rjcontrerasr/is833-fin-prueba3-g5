@@ -125,7 +125,13 @@ if st.session_state.problem_described and st.session_state.product_described and
         f"Use 'High' priority for other issues. "
         f"The description is '{client_complaint}'."
     )
-    
+        
+    @tool
+    def datetoday(dummy: str) -> str:
+    """Returns today's date."""
+    return "Today is " + str(date.today())
+
+
     # Create Jira task
     try:
         jira = JiraAPIWrapper()
