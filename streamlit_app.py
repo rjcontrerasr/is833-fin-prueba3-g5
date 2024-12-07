@@ -86,6 +86,7 @@ def extract_product_from_input(user_input, product_list):
     """
     Extract the product from user input based on predefined product categories.
     """
+    st.write("entered product input function")
     for product in product_list:
         if product.lower() in user_input.lower():
             return product
@@ -96,6 +97,7 @@ def update_problem_flag(user_input):
     """
     Check if the user input is sufficient to describe a problem.
     """
+    st.write("entered problem fag fuction")
     if len(user_input) > 10:  # Check if the input is detailed enough
         st.session_state.problem_described = True
         product = extract_product_from_input(user_input, product_categories)
@@ -126,7 +128,7 @@ if prompt := st.chat_input("How can I help?"):
 #st.write(problem_described)
 #st.write(product_described)
 #st.write(jira_task_created)
-    st.write(f"Product is {Product}")
+    
     st.write("Session state variables initialized:")
     st.write(f"problem_described: {st.session_state.problem_described}")
     st.write(f"product_described: {st.session_state.product_described}")
