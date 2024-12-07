@@ -68,6 +68,10 @@ if "memory" not in st.session_state: ### IMPORTANT.
     agent = create_tool_calling_agent(chat, tools, prompt)
     st.session_state.agent_executor = AgentExecutor(agent=agent, tools=tools,  memory=st.session_state.memory, verbose= True)  # ### IMPORTANT to use st.session_state.memory and st.session_state.agent_executor.
 
+# Define a key in session state to store the identified product
+if "identified_product" not in st.session_state:
+    st.session_state.identified_product = None
+
 # Display the existing chat messages via `st.chat_message`.
 for message in st.session_state.memory.buffer:
     # if (message.type in ["ai", "human"]):
@@ -81,9 +85,24 @@ if prompt := st.chat_input("How can I help?"):
     st.chat_message("user").write(prompt)
 
     # Generate a response using the OpenAI API.
-    #response = st.session_state.agent_executor.invoke({"input": prompt})['output']
-    response = "Tellme more"
+    response = st.session_state.agent_executor.invoke({"input": prompt})['output']
+    
     # response
     st.chat_message("assistant").write(response)
     # st.write(st.session_state.memory.buffer)
 
+    
+    for category in product_categories:
+        if category.lower() in response.lower():
+            st.session_state.identified_product = category
+            break
+
+    # Provide feedback to the user about the identified product
+    if st.session_state.identified_product:
+        st.write(f"Identified product category: {st.session_state.identified_product}")
+    else:
+        st.write("No product category identified yet.")
+
+# Display the stored product category, if any
+if st.session_state.identified_product:
+    st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
