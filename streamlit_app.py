@@ -96,13 +96,30 @@ if prompt := st.chat_input("How can I help?"):
         # Filter the dataset to find subcategories for the identified product
         subproducts = df1[df1['Product'] == identified_product]['Sub-product'].unique().tolist()
 
-        # Identify the subproduct from the response
+        # Use the model to identify the best matching subproduct
         identified_subproduct = None
-        for subproduct in subproducts:
-            if subproduct.lower() in response.lower():
-                identified_subproduct = subproduct
-                st.session_state.identified_subproduct = subproduct
-                break
+        if subproducts:
+            # Create a prompt to evaluate the closest subproduct
+            subproduct_prompt = (
+                f"The user described the following issue: '{prompt}'. Based on the description, "
+                f"please identify the most relevant subproduct from the following list: {subproducts}. "
+                "If none of the subproducts match exactly, respond with the most general category."
+            )
+
+            # Invoke the model to determine the subproduct
+            subproduct_response = st.session_state.agent_executor.invoke({"input": subproduct_prompt})['output']
+
+            # Check if the model identified a valid subproduct
+            for subproduct in subproducts:
+                if subproduct.lower() in subproduct_response.lower():
+                    identified_subproduct = subproduct
+                    st.session_state.identified_subproduct = identified_subproduct
+                    break
+
+            # Fallback: Select the first subproduct if none is confidently identified
+            if not identified_subproduct:
+                identified_subproduct = subproducts[0]
+                st.session_state.identified_subproduct = identified_subproduct
 
         # Create acknowledgment message
         if identified_subproduct:
@@ -111,6 +128,12 @@ if prompt := st.chat_input("How can I help?"):
                 f"specifically the subcategory: **{identified_subproduct}**. A ticket has been created for your issue, and it will be forwarded to the appropriate support team. "
                 "They will reach out to you shortly to assist you further. If you have any more questions or need additional assistance, please let me know!"
             )
+
+            # Confirm whether the subproduct was directly identified by the model or selected as fallback
+            if identified_subproduct == subproducts[0]:
+                st.write("The subproduct was not directly identified by the model. The most general subcategory was selected.")
+            else:
+                st.write("The subproduct was directly identified by the model.")
         else:
             unified_response = (
                 f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**. "
@@ -120,6 +143,10 @@ if prompt := st.chat_input("How can I help?"):
 
         # Display acknowledgment message
         st.chat_message("assistant").write(unified_response)
+
+        # Display the product and subproduct in the sidebar
+        st.sidebar.write(f"Stored Product: {st.session_state.identified_product}")
+        st.sidebar.write(f"Stored Subproduct: {st.session_state.identified_subproduct}")
 
         # For troubleshooting purposes, print the identified product and subproduct
         st.write("Troubleshooting: Identified Product and Subproduct")
