@@ -128,44 +128,50 @@ if prompt := st.chat_input("How can I help?"):
 
 # Conditional Jira task creation
 if st.session_state.problem_described and st.session_state.product_described and not st.session_state.jira_task_created:
-    st.session_state.jira_task_created = True  # Prevent duplicate task creation
-    
-    # Setup Jira API
-    os.environ["JIRA_API_TOKEN"] = st.secrets["JIRA_API_TOKEN"]
-    os.environ["JIRA_USERNAME"] = "rich@bu.edu"
-    os.environ["JIRA_INSTANCE_URL"] = "https://is883-genai-r.atlassian.net/"
-    os.environ["JIRA_CLOUD"] = "True"
-    
-    assigned_issue = f"Managing my {st.session_state.product_described} Account"
-    client_complaint = prompt  # Use the user's latest input as the complaint description
-    
-    question = (
-        f"Create a task in my project with the key FST. Take into account that the Key of this project is FST. "
-        f"The task's type is 'Task', assigned to rich@bu.edu. "
-        f"The summary is '{assigned_issue}'. "
-        f"Always assign 'Highest' priority if the issue is related to fraudulent activities. "
-        f"Use 'High' priority for other issues. "
-        f"The description is '{client_complaint}'."
-    )
-        
-    # Create Jira task
     try:
+        # Setup Jira API credentials
+        os.environ["JIRA_API_TOKEN"] = st.secrets["JIRA_API_TOKEN"]
+        os.environ["JIRA_USERNAME"] = "rich@bu.edu"
+        os.environ["JIRA_INSTANCE_URL"] = "https://is883-genai-r.atlassian.net/"
+        os.environ["JIRA_CLOUD"] = "True"
+
+        # Use a dedicated variable for the problem description
+        user_description = st.session_state.memory.buffer[-1].content  # Extract latest user message
+
+        # Define Jira task details
+        assigned_issue = f"Managing my {st.session_state.product_described} Account"
+        question = (
+            f"Create a task in my project with the key FST. Take into account that the Key of this project is FST. "
+            f"The task's type is 'Task', assigned to rich@bu.edu. "
+            f"The summary is '{assigned_issue}'. "
+            f"Always assign 'Highest' priority if the issue is related to fraudulent activities. "
+            f"Use 'High' priority for other issues. "
+            f"The description is '{user_description}'."
+        )
+
+        # Initialize Jira toolkit and agent
         jira = JiraAPIWrapper()
         toolkit = JiraToolkit.from_jira_api_wrapper(jira)
-        
+
         # Fix tool names and descriptions
         for idx, tool in enumerate(toolkit.tools):
             toolkit.tools[idx].name = toolkit.tools[idx].name.replace(" ", "_")
             if "create_issue" in toolkit.tools[idx].name:
                 toolkit.tools[idx].description += " Ensure to specify the project ID."
-        
+
         tools = toolkit.get_tools()
         chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model="gpt-4o-mini")
         prompt = hub.pull("hwchase17/react")
         agent = create_react_agent(chat, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-        
+
+        # Invoke agent to create Jira task
         result = agent_executor.invoke({"input": question})
         st.success(f"Jira task created successfully for the product: {st.session_state.product_described}")
+
+        # Mark task as created
+        st.session_state.jira_task_created = True
+
     except Exception as e:
         st.error(f"Error during Jira task creation: {e}")
+        st.session_state.jira_task_created = False  # Reset flag if task creation failed
