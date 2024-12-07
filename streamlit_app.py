@@ -11,6 +11,7 @@ from langchain_community.utilities.jira import JiraAPIWrapper
 from langchain_community.agent_toolkits.jira.toolkit import JiraToolkit
 from langchain import hub
 
+
 # Show title and description
 st.title("💬 Financial Support Chatbot")
 ### Adding subproducts
@@ -21,8 +22,6 @@ st.write(url)
 if url:
     try:
         df1 = pd.read_csv(url)
-        #st.write("CSV Data:")
-        #st.write(df1)
     except Exception as e:
         st.error(f"An error occurred: {e}")
 
@@ -30,32 +29,29 @@ product_categories = df1['Product'].unique().tolist()
 
 ### Important part.
 # Create a session state variable to flag whether the app has been initialized.
-# This code will only be run first time the app is loaded.
-if "memory" not in st.session_state: ### IMPORTANT.
-    model_type="gpt-4o-mini"
+# This code will only be run the first time the app is loaded.
+if "memory" not in st.session_state:
+    model_type = "gpt-4o-mini"
 
-    # initialize the memory
+    # Initialize the memory
     max_number_of_exchanges = 10
-    st.session_state.memory = ConversationBufferWindowMemory(memory_key="chat_history", k=max_number_of_exchanges, return_messages=True) ### IMPORTANT to use st.session_state.memory.
+    st.session_state.memory = ConversationBufferWindowMemory(memory_key="chat_history", k=max_number_of_exchanges, return_messages=True)
 
     # LLM
     chat = ChatOpenAI(openai_api_key=st.secrets["OpenAI_API_KEY"], model=model_type)
 
-    # tools
+    # Tools
     from langchain.agents import tool
-    from datetime import date
     @tool
     def datetoday(dummy: str) -> str:
         """Returns today's date, use this for any \
         questions that need today's date to be answered. \
-        This tool returns a string with today's date.""" #This is the desciption the agent uses to determine whether to use the time tool.
+        This tool returns a string with today's date."""
         return "Today is " + str(date.today())
 
     tools = [datetoday]
     
-    # Now we add the memory object to the agent executor
-    # prompt = hub.pull("hwchase17/react-chat")
-    # agent = create_react_agent(chat, tools, prompt)
+    # Create the agent with memory
     from langchain_core.prompts import ChatPromptTemplate
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -66,48 +62,43 @@ if "memory" not in st.session_state: ### IMPORTANT.
         ]
     )
     agent = create_tool_calling_agent(chat, tools, prompt)
-    st.session_state.agent_executor = AgentExecutor(agent=agent, tools=tools,  memory=st.session_state.memory, verbose= True)  # ### IMPORTANT to use st.session_state.memory and st.session_state.agent_executor.
+    st.session_state.agent_executor = AgentExecutor(agent=agent, tools=tools, memory=st.session_state.memory, verbose=True)
 
 # Define a key in session state to store the identified product
 if "identified_product" not in st.session_state:
     st.session_state.identified_product = None
 
-# Display the existing chat messages via `st.chat_message`.
+# Display the existing chat messages via `st.chat_message`
 for message in st.session_state.memory.buffer:
-    # if (message.type in ["ai", "human"]):
     st.chat_message(message.type).write(message.content)
 
-# Create a chat input field to allow the user to enter a message. This will display
-# automatically at the bottom of the page.
+# Create a chat input field to allow the user to enter a message
 if prompt := st.chat_input("How can I help?"):
     
-    # question
+    # User message
     st.chat_message("user").write(prompt)
 
-    # Generate a response using the OpenAI API.
+    # Generate a response using the OpenAI API
     response = st.session_state.agent_executor.invoke({"input": prompt})['output']
     
-    # response
-    st.chat_message("assistant").write(response)
-    # st.write(st.session_state.memory.buffer)
-
-    
+    # Extract the identified product category from the response
+    identified_product = None
     for category in product_categories:
         if category.lower() in response.lower():
+            identified_product = category
             st.session_state.identified_product = category
             break
 
-    # Provide feedback to the user about the identified product
-    if st.session_state.identified_product:
-        st.write(f"Identified product category: {st.session_state.identified_product}")
-        
-        # Confirmation message to the customer
-        st.chat_message("assistant").write(
-            f"Thank you for your patience. A ticket has been created for the product category **{st.session_state.identified_product}**. "
-            "Our support team will review your issue and reach out to you shortly. Rest assured, we are here to assist you."
+    # Create a single unified response message
+    if identified_product:
+        unified_response = (
+            f"Thank you for providing the details of your issue. Based on your description, your complaint has been categorized under: **{identified_product}**. "
+            "A ticket has been created for your issue, and it will be forwarded to the appropriate support team. They will reach out to you shortly to assist you further. "
+            "If you have any more questions or need additional assistance, please let me know!"
         )
+        st.chat_message("assistant").write(unified_response)
     else:
-        st.write("No product category identified yet.")
+        st.chat_message("assistant").write(response)  # Default response when no category is identified
 
 # Display the stored product category, if any
 if st.session_state.identified_product:
