@@ -1,10 +1,15 @@
 import streamlit as st
 from langchain.memory import ConversationBufferWindowMemory
 from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_tool_calling_agent, create_react_agent
-from langchain import hub
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate
+from datetime import date
 import pandas as pd
 import os
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain_community.utilities.jira import JiraAPIWrapper
+from langchain_community.agent_toolkits.jira.toolkit import JiraToolkit
+from langchain import hub
 
 # Show title and description.
 st.title("💬 Financial Support Chatbot")
